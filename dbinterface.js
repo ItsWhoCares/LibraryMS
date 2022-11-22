@@ -9,15 +9,15 @@ const db = new sqlite3.Database("users.db", sqlite3.OPEN_READWRITE, (err) => {
 });
 
 //Adds a user to the database
-exports.addUser = async function addUser(username, password) {
-  if (await hasUser(username)) {
+exports.addUser = async function addUser(stfname, password) {
+  if (await getUserByName(stfname)) {
     console.log("User already exists");
   } else {
     try {
       hash = await bcrypt.hash(password, 10);
       db.run(
         "INSERT INTO staff (stfname, hash) VALUES (?, ?)",
-        [username, hash],
+        [stfname, hash],
         function (err) {
           if (err) {
             return console.log(err.message);
@@ -32,25 +32,56 @@ exports.addUser = async function addUser(username, password) {
 };
 
 //Checks if a user exists in the database
-exports.hasUser = async function hasUser(username) {
+async function getUserByName(stfname) {
   return new Promise((resolve, reject) => {
-    db.get("SELECT * FROM staff WHERE stfname = ?", [username], (err, row) => {
+    db.get("SELECT * FROM staff WHERE stfname = ?", [stfname], (err, row) => {
       if (err) {
         reject(err);
       }
       if (row) {
-        resolve(true);
+        resolve(row);
+      } else {
+        resolve(false);
+      }
+    });
+  });
+}
+
+exports.getUserByName = getUserByName;
+
+exports.getUserById = async function getUserById(stfid) {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT * FROM staff WHERE stfid = ?", [stfid], (err, row) => {
+      if (err) {
+        reject(err);
+      }
+      if (row) {
+        resolve(row);
       } else {
         resolve(false);
       }
     });
   });
 };
+// exports.getUserById = async function getUserById(id) {
+//   return new Promise((resolve, reject) => {
+//     db.get("SELECT * FROM staff WHERE stfid = ?", [id], (err, row) => {
+//       if (err) {
+//         reject(err);
+//       }
+//       if (row) {
+//         resolve(true, row);
+//       } else {
+//         resolve(false);
+//       }
+//     });
+//   });
+// };
 
 //Checks if a user exists in the database and if the password is correct
-exports.checkUser = async function checkUser(username, password) {
+exports.checkUser = async function checkUser(stfname, password) {
   return new Promise((resolve, reject) => {
-    db.get("SELECT * FROM staff WHERE stfname = ?", [username], (err, row) => {
+    db.get("SELECT * FROM staff WHERE stfname = ?", [stfname], (err, row) => {
       if (err) {
         reject(err);
       }
@@ -60,7 +91,7 @@ exports.checkUser = async function checkUser(username, password) {
             reject(err);
           }
           if (result) {
-            resolve(true);
+            resolve(true, row);
           } else {
             resolve(false);
           }

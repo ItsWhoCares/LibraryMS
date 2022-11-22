@@ -38,16 +38,12 @@
         <div></div>
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link me-4" href="#"><strong>Username</strong></a>
+            <a class="nav-link me-4" href="#"><strong><%= name %></strong></a>
           </li>
         </ul>
-        <button
-          class="btn btn-primary"
-          type="button"
-          onclick="location.href='/logout';"
-        >
-          Log Out
-        </button>
+        <form action="/logout?_method=DELETE" method="POST">
+          <button class="btn btn-primary" type="submit">Log Out</button>
+        </form>
       </div>
     </nav>
     <!-- End: Navbar Right Links -->

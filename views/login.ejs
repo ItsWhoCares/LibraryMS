@@ -74,9 +74,9 @@
                   <div class="mb-3">
                     <input
                       class="form-control"
-                      type="email"
-                      name="email"
-                      placeholder="Email"
+                      type="name"
+                      name="stfname"
+                      placeholder="Name"
                     />
                   </div>
                   <div class="mb-3">
@@ -87,6 +87,11 @@
                       placeholder="Password"
                     />
                   </div>
+                  <% if (messages.error) {%>
+                  <div class="alert alert-danger" role="alert">
+                    <%= messages.error %>
+                  </div>
+                  <% } %>
                   <div class="mb-3">
                     <button class="btn btn-primary d-block w-100" type="submit">
                       Log In
