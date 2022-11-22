@@ -93,6 +93,11 @@
                       style="padding: 6px 12px; margin: 0px; margin-top: 17px"
                     />
                   </div>
+                  <% if (messages.info) {%>
+                  <div class="alert alert-danger" role="alert">
+                    <%= messages.info %>
+                  </div>
+                  <% } %>
                   <div class="mb-3">
                     <button class="btn btn-primary d-block w-100" type="submit">
                       Register

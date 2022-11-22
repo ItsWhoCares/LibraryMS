@@ -1,23 +1,30 @@
 if (process.env.NODE_ENV !== "production") {
-  console.log("Loading dotenv");
   require("dotenv").config();
 }
 
 const express = require("express");
 const app = express();
-const { readFile } = require("fs").promises;
-const path = require("path");
+const bcrypt = require("bcrypt");
+const passport = require("passport");
 const flash = require("express-flash");
 const session = require("express-session");
 const methodOverride = require("method-override");
 const db = require("./dbinterface");
-const passport = require("passport");
-
-const initializePassport = require("./UserAuthentication");
-initializePassport(passport, (stfname) => db.getUserByName(stfname));
+const path = require("path");
 
 app.set("view-engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
+
+const initializePassport = require("./UserAuthentication");
+const { stringify } = require("querystring");
+const { redirect } = require("express/lib/response");
+initializePassport(
+  passport,
+  (stfname) => db.getUserByName(stfname),
+  (id) => db.getUserById(id)
+);
+
+app.set("view-engine", "ejs");
 app.use(express.urlencoded({ extended: false }));
 app.use(flash());
 app.use(
@@ -27,21 +34,21 @@ app.use(
     saveUninitialized: false,
   })
 );
-
 app.use(passport.initialize());
 app.use(passport.session());
-
 app.use(methodOverride("_method"));
 
-app.get("/", checkAuthenticated, async (Request, Response) => {
-  user = db.getUserById(Request.session.passport.user);
-  user.then(() => Response.render("index.ejs", { name: user.stfname }));
+app.get("/", checkAuthenticated, (req, res) => {
+  req.user.then((user) => {
+    res.render("index.ejs", { stfname: user.stfname });
+  });
 });
 
-app.get("/login", checkNotAuthenticated, (Request, Response) => {
-  Response.render("login.ejs");
+app.get("/login", checkNotAuthenticated, (req, res) => {
+  res.render("login.ejs");
 });
 
+//Authenticate user
 app.post(
   "/login",
   checkNotAuthenticated,
@@ -52,26 +59,27 @@ app.post(
   })
 );
 
-app.get("/register", checkNotAuthenticated, (Request, Response) => {
-  Response.render("register.ejs");
+app.get("/register", checkNotAuthenticated, (req, res) => {
+  res.render("register.ejs");
 });
 
-app.post("/register", checkNotAuthenticated, async (Request, Response) => {
-  await db.addUser(Request.body.stfname, Request.body.password);
-  console.log(Request.body.stfname, Request.body.password);
-});
-
-app.delete("/logout", (req, res) => {
-  req.logout(function (err) {
-    if (err) {
-      return next(err);
+//Add a new user to the database
+app.post("/register", checkNotAuthenticated, async (req, res) => {
+  await db.addUser(req.body.stfname, req.body.password).then((result) => {
+    if (result) {
+      res.redirect("/login");
+    } else {
+      req.flash("info", "User already exists");
+      res.redirect("/register");
     }
-    res.redirect("/");
   });
 });
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000: http://localhost:3000");
+//Log out the user
+app.delete("/logout", (req, res) => {
+  req.session.destroy(function (err) {
+    res.redirect("/"); //Inside a callback… bulletproof!
+  });
 });
 
 function checkAuthenticated(req, res, next) {
@@ -88,3 +96,5 @@ function checkNotAuthenticated(req, res, next) {
   }
   next();
 }
+
+app.listen(3000);

@@ -10,26 +10,57 @@ const db = new sqlite3.Database("users.db", sqlite3.OPEN_READWRITE, (err) => {
 
 //Adds a user to the database
 exports.addUser = async function addUser(stfname, password) {
-  if (await getUserByName(stfname)) {
-    console.log("User already exists");
-  } else {
-    try {
-      hash = await bcrypt.hash(password, 10);
-      db.run(
-        "INSERT INTO staff (stfname, hash) VALUES (?, ?)",
-        [stfname, hash],
-        function (err) {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT * FROM staff WHERE stfname = ?", [stfname], (err, row) => {
+      if (err) {
+        reject(err);
+      } else if (row) {
+        resolve(false);
+      } else {
+        bcrypt.hash(password, 10, (err, hash) => {
           if (err) {
-            return console.log(err.message);
+            reject(err);
+          } else {
+            db.run(
+              "INSERT INTO users (stfname, hash) VALUES (?, ?)",
+              [stfname, hash],
+              (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(true);
+                }
+              }
+            );
           }
-          console.log(`user added`);
-        }
-      );
-    } catch {
-      console.log("Error");
-    }
-  }
+        });
+      }
+    });
+  });
 };
+
+// exports.addUser = async function addUser(stfname, password) {
+//   if (await getUserByName(stfname)) {
+//     return false;
+//   } else {
+//     try {
+//       hash = await bcrypt.hash(password, 10);
+//       db.run(
+//         "INSERT INTO staff (stfname, hash) VALUES (?, ?)",
+//         [stfname, hash],
+//         function (err) {
+//           if (err) {
+//             return console.log(err.message);
+//           }
+//           console.log("user added");
+//           return true;
+//         }
+//       );
+//     } catch {
+//       console.log("Error");
+//     }
+//   }
+// };
 
 //Checks if a user exists in the database
 async function getUserByName(stfname) {
@@ -41,7 +72,7 @@ async function getUserByName(stfname) {
       if (row) {
         resolve(row);
       } else {
-        resolve(false);
+        resolve(null);
       }
     });
   });
